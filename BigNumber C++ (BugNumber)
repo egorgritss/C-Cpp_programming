@@ -16,7 +16,7 @@
 #include <functional>
 #include <stdexcept>
 
-using namespace std;  //god ,sorry for this
+using namespace std;  //god, sorry for this
 
 class CBigInt {
 public:
