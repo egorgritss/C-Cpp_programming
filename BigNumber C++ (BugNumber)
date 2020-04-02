@@ -1,0 +1,821 @@
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cctype>
+#include <climits>
+#include <cstdint>
+#include <cassert>
+#include <cmath>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <memory>
+#include <functional>
+#include <stdexcept>
+
+using namespace std;  //god ,sorry for this
+
+class CBigInt {
+public:
+    
+    // default constructor
+    CBigInt();
+    // copying
+    CBigInt & operator=(const int &x);
+    CBigInt & operator=(const string &x);
+    CBigInt & operator=(const CBigInt &x);
+    // int constructor
+    CBigInt(const int &b);
+    // string constructor
+    CBigInt(const string &x);
+    // operator +, any combination {CBigInt/int/string} + {CBigInt/int/string}
+            CBigInt operator + (const int &x)                       const;
+            CBigInt operator + (const string &x)                    const;
+            CBigInt operator + (const CBigInt &x)                   const;
+    friend  CBigInt operator + (const int &x, const CBigInt &b);
+    friend  CBigInt operator + (const string &x, const CBigInt &b);
+    // unary operator - {BigInt}
+    CBigInt operator-(void) const;
+    // binary operator - {CBigInt} - {CBigInt}
+    CBigInt operator-(const CBigInt &x)const;
+    // operator *, any combination {CBigInt/int/string} * {CBigInt/int/string}
+    CBigInt operator*(const int &b) const;
+    CBigInt operator*(const string &x) const;
+    CBigInt operator*(const CBigInt &x) const;
+    friend CBigInt operator*(const int &x, const CBigInt &b);
+    friend CBigInt operator*(const string &x, const CBigInt &b);
+    // operator +=, any of {CBigInt/int/string}
+    void operator+=(const int &x);
+    void operator+=(const string &x);
+    void operator+=(const CBigInt &x);
+    // operator *=, any of {CBigInt/int/string}
+    void operator*=(const int &x);
+    void operator*=(const string &x);
+    void operator*=(const CBigInt &x);
+    // comparison operators, any combination {CBigInt/int/string} {<,<=,>,>=,==,!=} {CBigInt/int/string}
+    bool    operator   <    (const CBigInt &x)  const;
+    bool    operator   <=   (const CBigInt &x)  const;
+    bool    operator   >    (const CBigInt &x)  const;
+    bool    operator   >=   (const CBigInt &x)  const;
+    bool    operator   ==   (const CBigInt &x)  const;
+    bool    operator   !=   (const CBigInt &x)  const;
+
+    bool    operator   <    (const string &x)   const;
+    bool    operator   <=   (const string &x)   const;
+    bool    operator   >    (const string &x)   const;
+    bool    operator   >=   (const string &x)   const;
+    bool    operator   ==   (const string &x)   const;
+    bool    operator   !=   (const string &x)   const;
+
+    bool    operator   <    (const int &x)      const;
+    bool    operator   <=   (const int &x)      const;
+    bool    operator   >    (const int &x)      const;
+    bool    operator   >=   (const int &x)      const;
+    bool    operator   ==   (const int &x)      const;
+    bool    operator   !=   (const int &x)      const;
+
+    friend bool    operator   <   (const int &x, const CBigInt &b);
+    friend bool    operator   <   (const string &x, const CBigInt &b);
+    friend bool    operator   <=  (const int &x, const CBigInt &b);
+    friend bool    operator   <=  (const string &x, const CBigInt &b);
+    friend bool    operator   >   (const int &x, const CBigInt &b);
+    friend bool    operator   >   (const string &x, const CBigInt &b);
+    friend bool    operator   >=  (const int &x, const CBigInt &b);
+    friend bool    operator   >=  (const string &x, const CBigInt &b);
+    friend bool    operator   ==  (const int &x, const CBigInt &b);
+    friend bool    operator   ==  (const string &x, const CBigInt &b);
+    friend bool    operator   !=  (const int &x, const CBigInt &b);
+    friend bool    operator   !=  (const string &x, const CBigInt &b);
+    // output operator <<
+    friend ostream & operator << ( ostream & os, const CBigInt & x );
+    // input operator >>
+    friend bool        operator >> ( istringstream & is, CBigInt & x );
+
+    int getNumI(int i)                          const;
+   // int getNumI(int i, const string &x)         const;
+    int getNumI(int i, const vector<int> &x)    const;
+    
+    //TODO divide
+
+private:
+    vector<int> num;
+};
+
+ostream & operator << (ostream & os, const CBigInt & x){
+
+    int size=x.num.size();
+    for (int i=size-1; i>=0; i--){
+        os << x.num[i];
+    }
+    return os;
+}
+bool  operator >> (istringstream & is, CBigInt & x){
+
+    string tmp;
+    char a='x';
+    bool minus= false, digit=false;
+
+    while(is >> noskipws >> a){
+
+        if(isdigit(a))
+            digit=true;
+
+        if(a=='-' && !minus) {
+            minus=true;
+            tmp.push_back('-');
+            continue;
+        }else if(a=='-' && minus)
+            break;
+
+        if(a==' ' && digit)
+            break;
+
+        if(a==' ' && minus)
+            break;
+
+        if(!isdigit(a) && a!=' ')
+            break;
+
+        tmp.push_back(a);
+
+    }
+
+    if(tmp.empty() || (tmp.size()==1 && tmp[0]=='-') )
+        return false;
+
+    x=tmp;
+    return true;
+}
+
+/** constructors */
+CBigInt::CBigInt() {
+    num.push_back(0);
+}
+CBigInt::CBigInt(const int &b) {
+    vector<int> tmp;
+    int x=b, i=b;
+    if (i == 0) {
+        num.push_back(0);
+    } else {
+        while (i != 0) {
+            tmp.push_back(abs(i % 10));
+            i = i / 10;
+        }
+        if(x<0){
+            tmp.back()=-tmp.back();
+        }
+        num = tmp;
+    }
+}
+CBigInt::CBigInt(const string &x) {
+
+    string i, z=x;
+
+    if(x[0]=='-' && !x.empty()){
+        i.push_back('-');
+
+        while(z[1]==' ' && z.size()!=1){
+            z.erase(z.begin()+1);
+        }
+
+        int j=1;
+        while(isdigit(z[j])){
+            i.push_back(z[j]);
+            j++;
+        }
+        if(j==1){
+            throw invalid_argument("Error");
+        }
+
+        i.erase(i.begin());
+        while(i[0]-'0'==0 && i.size()!=1){
+            i.erase(i.begin());
+        }
+        i.insert(i.begin(),'-');
+
+    } else if(!x.empty()){
+
+        while(z[0]==' ' && z.size()!=1){
+            z.erase(z.begin());
+        }
+
+        int j=0;
+        while(isdigit(z[j])){
+            i.push_back(z[j]);
+            j++;
+        }
+        if(j==0){
+            throw invalid_argument("Error");
+        }
+
+        while(i[0]-'0'==0 && i.size()!=1){
+            i.erase(i.begin());
+        }
+    }
+
+    if (i.empty()) {
+        num.push_back(0);
+    } else {
+        if(i[0]=='-'){
+            int size = i.size();
+            for (int j = size - 1; j >= 1; j--) {
+                num.push_back(i[j] - '0');
+            }
+            num.back()=-num.back();
+        }else{
+            int size = i.size();
+            for (int j = size - 1; j >= 0; j--) {
+                num.push_back(i[j] - '0');
+            }
+        }
+    }
+}
+/***/
+
+/** = operator */
+CBigInt & CBigInt::operator=(const int &x) {
+    CBigInt xNum(x);
+    *this=xNum;
+    return *this;
+}
+CBigInt & CBigInt::operator=(const string &x) {
+    CBigInt xNum(x);
+    *this=xNum;
+    return *this;
+}
+CBigInt & CBigInt::operator=(const CBigInt &x) {
+    num = x.num;
+    return *this;
+}
+/***/
+
+
+/** + operator */
+CBigInt CBigInt::operator + (const int &x) const {
+    CBigInt xNum(x);
+    return *this+xNum;
+}
+CBigInt CBigInt::operator + (const string &x) const {
+    CBigInt xNum(x);
+    return *this+xNum;
+}
+CBigInt CBigInt::operator + (const CBigInt &x) const {
+
+    CBigInt tmp;
+    bool added = true;
+
+    if(*this<=0 && x>=0){
+        if(-(*this)>x)
+            return -(-(*this)-x);
+        else
+            return x-(-*this);
+    }
+
+    if (*this>=0 && x<=0){
+        if(-x>*this)
+            return -(-x-*this);
+        else
+            return *this-(-x);
+    }
+
+    if (*this <= 0 && x <= 0){
+        return  -(-x + (-*this));
+    }
+
+    int xSize = x.num.size();
+    int numSize = num.size();
+
+    if (xSize >= numSize) {
+        for (int i = 0; i < xSize; i++) {
+            if (added) {
+                tmp.num[i] += getNumI(i) + getNumI(i, x.num);
+                if (tmp.num.back() > 9) {
+                    tmp.num.push_back((tmp.num[i] - tmp.num[i] % 10) / 10);
+                    tmp.num[i] = tmp.num[i] % 10;
+                    added = true;
+                } else {
+                    added = false;
+                }
+            } else {
+                tmp.num.push_back(getNumI(i) + getNumI(i, x.num));
+                if (tmp.num.back() > 9) {
+                    tmp.num.push_back((tmp.num[i] - tmp.num[i] % 10) / 10);
+                    tmp.num[i] = tmp.num[i] % 10;
+                    added = true;
+                } else {
+                    added = false;
+                }
+            }
+        }
+    } else {
+        for (int i = 0; i < numSize; i++) {
+            if (added) {
+                tmp.num[i] += getNumI(i) + getNumI(i, x.num);
+                if (tmp.num.back() > 9) {
+                    tmp.num.push_back((tmp.num[i] - tmp.num[i] % 10) / 10);
+                    tmp.num[i] = tmp.num[i] % 10;
+                    added = true;
+                } else {
+                    added = false;
+                }
+            } else {
+                tmp.num.push_back(getNumI(i) + getNumI(i, x.num));
+
+                if (tmp.num.back() > 9) {
+                    tmp.num.push_back((tmp.num[i] - tmp.num[i] % 10) / 10);
+                    tmp.num[i] = tmp.num[i] % 10;
+                    added = true;
+                } else {
+                    added = false;
+                }
+            }
+        }
+    }
+
+    return tmp;
+
+}
+CBigInt          operator + (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum+b;
+}
+CBigInt          operator + (const string &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum+b;
+}
+/***/
+
+
+/** unary - operator */
+CBigInt CBigInt::operator-() const {
+    CBigInt tmp;
+    tmp.num = this->num;
+    tmp.num.back() = -tmp.num.back();
+    return tmp;
+}
+/***/
+
+/** binary - operator */
+CBigInt CBigInt::operator-(const CBigInt &x) const {
+    CBigInt newNum(*this);
+    int numSize = num.size();
+
+    for(int i=0; i<numSize; i++){
+        newNum.num[i]=newNum.num[i]-getNumI(i, x.num);
+        if(newNum.num[i]<0){
+            newNum.num[i]+=10;
+            newNum.num[i+1]-=1;
+        }
+    }
+
+    while (newNum.num.back()==0 && newNum.num.size()!=1)
+        newNum.num.pop_back();
+
+    return newNum;
+}
+/***/
+
+
+/**   *   operator */
+CBigInt CBigInt::operator * (const CBigInt &x) const{
+
+    if(x==0)
+        return 0;
+    if(x==1)
+        return *this;
+
+    if (x<0 && *this<0)
+        return -x*-*this;
+
+    if (x<0)
+        return -(-x**this);
+
+    if (*this<0)
+        return -(x*-*this);
+        
+    CBigInt result;
+    int numSize=num.size();
+    int xSize=x.num.size();
+
+    bool added=false;
+    if (x>=*this){
+        for (int i=0; i< numSize; i++){
+            CBigInt tmp;
+            tmp.num.clear();
+            int q=i;
+            for(int j=0; j<xSize; j++){
+                if(added){
+                    tmp.num.back()+=num[i]*x.num[j];
+                    if(tmp.num.back()>9){
+                        int temp=tmp.num.back();
+                        tmp.num.back()=tmp.num.back()%10;
+                        tmp.num.push_back((temp-tmp.num.back()%10)/10);
+                        added=true;
+                        continue;
+                    }
+                    added=false;
+                }else{
+                    tmp.num.push_back(num[i]*x.num[j]);
+                    if(tmp.num.back()>9){
+                        int temp=tmp.num.back();
+                        tmp.num.back()=tmp.num.back()%10;
+                        tmp.num.push_back((temp-tmp.num.back()%10)/10);
+                        added=true;
+                        continue;
+                    }
+                    added=false;
+                }
+            }
+            while(q){
+                tmp.num.insert(tmp.num.begin(),0);
+                q--;
+            }
+            result=result+tmp;
+            added=false;
+        }
+        return result;
+    } else{
+        for (int i=0; i< xSize; i++){
+            CBigInt tmp;
+            tmp.num.clear();
+            int q=i;
+            for(int j=0; j<numSize; j++){
+
+                if(added){
+                    tmp.num.back()+=x.num[i]*num[j];
+                    if(tmp.num.back()>9){
+                        int temp=tmp.num.back();
+                        tmp.num.back()=tmp.num.back()%10;
+                        tmp.num.push_back((temp-tmp.num.back()%10)/10);
+                        added=true;
+                        continue;
+                    }
+                    added=false;
+                }else{
+                    tmp.num.push_back(x.num[i]*num[j]);
+                    if(tmp.num.back()>9){
+                        int temp=tmp.num.back();
+                        tmp.num.back()=tmp.num.back()%10;
+                        tmp.num.push_back((temp-tmp.num.back()%10)/10);
+                        added=true;
+                        continue;
+                    }
+                    added=false;
+                }
+            }
+            while(q){
+                tmp.num.insert(tmp.num.begin(),0);
+                q--;
+            }
+            result=result+tmp;
+            added=false;
+        }
+        return result;
+    }
+}
+CBigInt CBigInt::operator * (const int &b) const{
+   CBigInt xNum(b);
+   return *this*xNum;
+}
+CBigInt CBigInt::operator * (const string &x) const{
+    CBigInt xNum(x);
+    return xNum**this;
+}
+CBigInt          operator * (const int &x, const CBigInt &b){
+    return b*x;
+}
+CBigInt          operator * (const string &x, const CBigInt &b){
+    CBigInt xNum(x);
+    return xNum*b;
+}
+/***/
+
+
+/** += operator*/
+void CBigInt::operator += (const int &x){
+    *this=*this+x;
+}
+void CBigInt::operator += (const string &x){
+    *this=*this+x;
+}
+void CBigInt::operator += (const CBigInt &x){
+      *this=*this+x;
+}
+/***/
+
+/** *= operator*/
+void CBigInt::operator *= (const int &x){
+    *this=*this*x;
+}
+void CBigInt::operator *= (const string &x){
+    *this=*this*x;
+}
+void CBigInt::operator *= (const CBigInt &x){
+    *this=*this*x;
+}
+/***/
+
+/** comparision operators */
+bool CBigInt::operator   <   (const CBigInt &x)    const {
+
+    int numSize = num.size();
+    int xSize = x.num.size();
+
+    if (numSize < xSize && num.back()>0)
+        return true;
+
+    if (numSize > xSize && num.back()>0)
+        return false;
+
+    if ( num.back() > 0 &&  x.num.back() < 0 )
+        return false;
+
+    if ( num.back() < 0 &&  x.num.back() > 0 )
+        return true;
+
+    if (*this == x)
+        return false;
+
+    if ( num.back() >= 0 &&  x.num.back() <= 0 )
+        return false;
+
+    if ( num.back() <= 0 &&  x.num.back() >= 0 )
+        return true;
+        
+    if(x.num.back()<0 && num.back()<0){
+
+        if(numSize>xSize)
+            return true;
+
+        if(numSize<xSize)
+            return false;
+            
+        for (int i=numSize-1; i>=0; i-- ){
+            if(abs(num[i])<abs(x.num[i]))
+                return false;
+            else if (abs(num[i])<abs(x.num[i]))
+                return true;
+            else
+                continue;
+        }
+        return true;
+    }
+    
+    for (int i = numSize - 1; i >= 0; i--) {
+        if (num[i] < x.num[i])
+            return true;
+        else if (num[i] > x.num[i])
+            return false;
+        else
+            continue;
+    }
+
+    return false;
+
+
+}
+bool CBigInt::operator   <=  (const CBigInt &x)    const {
+    return (*this<x || *this==x);
+}
+bool CBigInt::operator   >   (const CBigInt &x)    const {
+    return !(*this <= x);
+}
+bool CBigInt::operator   >=  (const CBigInt &x)    const {
+    return !(*this < x);
+}
+bool CBigInt::operator   ==  (const CBigInt &x)    const {
+    return num == x.num;
+}
+bool CBigInt::operator   !=  (const CBigInt &x)    const {
+    return num != x.num;
+}
+
+bool CBigInt::operator   <   (const string &x)     const {
+
+    CBigInt xNum = x;
+    return *this < xNum;
+}
+bool CBigInt::operator   <=  (const string &x)     const {
+
+    CBigInt xNum = x;
+    return *this <= xNum;
+
+
+}
+bool CBigInt::operator   >   (const string &x)     const {
+    return !(*this <= x);
+}
+bool CBigInt::operator   >=  (const string &x)     const {
+    return !(*this < x);
+}
+bool CBigInt::operator   ==  (const string &x)     const {
+    CBigInt xNum = x;
+    return *this == xNum;
+}
+bool CBigInt::operator   !=  (const string &x)     const {
+    return !(*this == x);
+}
+
+bool CBigInt::operator   <   (const int &x)               const {
+    CBigInt xNum = x;
+    return *this < xNum;
+}
+bool CBigInt::operator   <=  (const int &x)               const {
+    CBigInt xNum = x;
+    return *this <= xNum;
+}
+bool CBigInt::operator   >   (const int &x)               const {
+    CBigInt xNum = x;
+    return *this > xNum;
+}
+bool CBigInt::operator   >=  (const int &x)               const {
+    CBigInt xNum = x;
+    return *this >= xNum;
+}
+bool CBigInt::operator   ==  (const int &x)               const {
+    CBigInt xNum = x;
+    return *this == xNum;
+}
+bool CBigInt::operator   !=  (const int &x)               const {
+    CBigInt xNum = x;
+    return *this != xNum;
+}
+
+bool          operator   <   (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum <  b;
+}
+bool          operator   <   (const string &x, const CBigInt &b){
+    CBigInt xNum(x);
+    return xNum <  b;
+}
+bool          operator   <=  (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum <= b;
+}
+bool          operator   <=  (const string &x, const CBigInt &b){
+    CBigInt xNum(x);
+    return xNum <= b;
+}
+bool          operator   >   (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum >  b;
+}
+bool          operator   >   (const string &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum >  b;
+}
+bool          operator   >=  (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum >= b;
+}
+bool          operator   >=  (const string &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum >= b;
+}
+bool          operator   ==  (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum == b;
+}
+bool          operator   ==  (const string &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum == b;
+}
+bool          operator   !=  (const int &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum != b;
+}
+bool          operator   !=  (const string &x, const CBigInt &b) {
+    CBigInt xNum(x);
+    return xNum != b;
+}
+/***/
+
+
+/** additional functions */
+int CBigInt::getNumI    (int i)                         const {
+    int size = num.size();
+    if (i >= size || i < 0) {
+        return 0;
+    } else
+        return num[i];
+}
+int CBigInt::getNumI    (int i, const vector<int> &x)   const {
+    int size = x.size();
+    if (i >= size || i < 0) {
+        return 0;
+    } else
+        return x[i];
+}
+/***/
+
+
+static bool equal ( const CBigInt & x, const char * val )
+{
+    ostringstream oss;
+    oss << x;
+    return oss . str () == val;
+}
+int main(void) {
+
+    CBigInt a, b, c;
+    istringstream is;
+
+
+
+    a = 10;
+    a += 20;
+    assert ( equal ( a, "30" ) );
+    a *= 5;
+    assert ( equal ( a, "150" ) );
+    b = a + 3;
+    assert ( equal ( b, "153" ) );
+    b = a * 7;
+    assert ( equal ( b, "1050" ) );
+    assert ( equal ( a, "150" ) );
+
+    a = 10;
+    a += -20;
+    assert ( equal ( a, "-10" ) );
+    a *= 5;
+    assert ( equal ( a, "-50" ) );
+    b = a + 73;
+    assert ( equal ( b, "23" ) );
+    b = a * -7;
+    assert ( equal ( b, "350" ) );
+    assert ( equal ( a, "-50" ) );
+
+    a = "12345678901234567890";
+    a += "-99999999999999999999";
+    assert ( equal ( a, "-87654321098765432109" ) );
+    a *= "54321987654321987654";
+    assert ( equal ( a, "-4761556948575111126880627366067073182286" ) );
+    a *= 0;
+    assert ( equal ( a, "0" ) );
+    a = 10;
+    b = a + "400";
+    assert ( equal ( b, "410" ) );
+    b = a * "15";
+    assert ( equal ( b, "150" ) );
+    assert ( equal ( a, "10" ) );
+
+    is . clear ();
+    is . str ( " 1234" );
+    assert ( is >> b );
+    assert ( equal ( b, "1234" ) );
+    is . clear ();
+    is . str ( " 12 34" );
+    assert ( is >> b );
+    assert ( equal ( b, "12" ) );
+    is . clear ();
+    is . str ( "999z" );
+    assert ( is >> b );
+    assert ( equal ( b, "999" ) );
+    is . clear ();
+    is . str ( "abcd" );
+    assert ( ! ( is >> b ) );
+    is . clear ();
+    is . str ( "- 758" );
+    assert ( ! ( is >> b ) );
+    try
+    {
+        a = "-xyz";
+        assert ( "missing an exception" == NULL );
+    }
+    catch ( const invalid_argument & e )
+    {
+    }
+
+    a = "73786976294838206464";
+    assert (a < "1361129467683753853853498429727072845824");
+    assert (a <= "1361129467683753853853498429727072845824");
+    assert (!(a > "1361129467683753853853498429727072845824"));
+    assert (!(a >= "1361129467683753853853498429727072845824"));
+    assert (!(a == "1361129467683753853853498429727072845824"));
+    assert (a != "1361129467683753853853498429727072845824");
+    assert (!(a < "73786976294838206464"));
+    assert (a <= "73786976294838206464");
+    assert (!(a > "73786976294838206464"));
+    assert (a >= "73786976294838206464");
+    assert (a == "73786976294838206464");
+    assert (!(a != "73786976294838206464"));
+    assert (a < "73786976294838206465");
+    assert (a <= "73786976294838206465");
+    assert (!(a > "73786976294838206465"));
+    assert (!(a >= "73786976294838206465"));
+    assert (!(a == "73786976294838206465"));
+    assert (a != "73786976294838206465");
+    a = "2147483648";
+    assert (!(a < -2147483648));
+    assert (!(a <= -2147483648));
+    assert (a > -2147483648);
+    assert (a >= -2147483648);
+    assert (!(a == -2147483648));
+    assert (a != -2147483648);
+
+
+    return 0;
+}
