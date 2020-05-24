@@ -1,0 +1,314 @@
+
+using namespace std;
+
+class CMail {
+public:
+
+    CMail(const CTimeStamp &timeStamp, const string &from, const CMailBody &body, const CAttach *attach) //remove move ?
+            : mailBody(body),
+              time(timeStamp) {
+        mailFrom = from;
+        attachment = attach;
+        if (attach != nullptr)
+            attach->AddRef();
+    }
+
+    CMail(const CMail &x)
+            : mailBody(x.mailBody),
+              time(x.time) {
+        mailFrom = x.mailFrom;
+        attachment = x.attachment;
+        if (x.attachment != nullptr)
+            x.attachment->AddRef();
+    }
+
+    ~CMail() {
+
+        if (attachment != nullptr)
+            attachment->Release();
+    }
+
+    const string &From(void) const {
+        return mailFrom;
+    }
+
+    const CMailBody &Body(void) const {
+        return mailBody;
+    }
+
+    const CTimeStamp &TimeStamp(void) const {
+        return time;
+    }
+
+    const CAttach *Attachment(void) const {
+        return attachment;
+    }
+
+    friend ostream &operator<<(ostream &os, const CMail &x) {
+        os << x.time << x.mailFrom << " " << x.mailBody;
+        if (x.attachment != nullptr)
+            os << " + " << *x.attachment;
+
+        return os;
+    }
+
+private:
+    CMailBody mailBody;
+    CTimeStamp time;
+    string mailFrom;
+    const CAttach *attachment;
+
+};
+
+class CMailFolder {
+public:
+    explicit CMailFolder(const string &x) {
+        name = x;
+    }
+
+    bool operator<(const string &x) {
+        return name < x;
+    }
+
+    friend bool operator<(const string &x, const CMailFolder &y) {
+        return y.name < x;
+    }
+
+    string name;
+    vector<CMail> mails;
+};
+//=================================================================================================
+
+
+class CMailBox {
+public:
+    CMailBox(void) {
+        folders.emplace_back("inbox");
+    }
+    
+    int mail_time_lower_bound(const CTimeStamp &x, const int &folderIt) const {
+        int LO = 0;
+        int HI = folders[folderIt].mails.size() - 1;
+        int result = -1;
+        while (LO <= HI) {
+            int mid = (LO + HI) / 2;
+            if (folders[folderIt].mails[mid].TimeStamp().Compare(x) < 0) {
+                LO = mid + 1;
+                continue;
+            } else if (folders[folderIt].mails[mid].TimeStamp().Compare(x) > 0) {
+                result = mid;
+                HI = mid - 1;
+            } else
+                return mid;
+        }
+        return result;
+    }
+
+    int mail_time_lower_bound(const CTimeStamp &x, const vector<CMail> &mails) const {
+        int LO = 0;
+        int HI = mails.size() - 1;
+        int result = -1;
+        while (LO <= HI) {
+            int mid = (LO + HI) / 2;
+            if (mails[mid].TimeStamp().Compare(x) < 0) {
+                LO = mid + 1;
+                continue;
+            } else if (mails[mid].TimeStamp().Compare(x) > 0) {
+                result = mid;
+                HI = mid - 1;
+            } else
+                return mid;
+        }
+        return result;
+    }
+
+
+    bool Delivery(const CMail &mail) {
+
+
+        if (folders[0].mails.empty()) {
+            folders[0].mails.push_back(mail);
+            return true;
+        }
+
+        int mailIt = mail_time_lower_bound(mail.TimeStamp(), 0);
+        if (mailIt < 0) {
+            folders[0].mails.push_back(mail);
+            return true;
+        }
+        folders[0].mails.insert(folders[0].mails.begin() + mailIt, mail);
+        
+        return true;
+    }
+
+    bool NewFolder(const string &folderName) {
+
+        int size = folders.size();
+        for (int i = 0; i < size; ++i)
+            if (folders[i].name == folderName)
+                return false;
+            
+        int i = folders.size() - 1;
+
+        while (i > 0 && folders[i].name > folderName)
+            --i;
+
+        i++;
+        folders.insert(folders.begin() + i, CMailFolder(folderName));
+        return true;
+    }
+
+    bool MoveMail(const string &fromFolder, const string &toFolder) {
+
+
+        if (fromFolder == toFolder)
+            return true;
+
+        int toFolderIt; //= folder_bin_search(toFolder);
+        int fromFolderIt; //= folder_bin_search(fromFolder);
+
+        int size = folders.size();
+        int flag=0;
+        for (int i =0; i<size; i++)
+            if (folders[i].name==fromFolder){
+                fromFolderIt=i;
+                flag = 1;
+                break;
+            }
+
+        if(flag == 0)
+            return false;
+        flag =0;
+
+        for (int i =0; i<size; i++)
+            if (folders[i].name==toFolder){
+                toFolderIt=i;
+                flag = 1;
+                break;
+            }
+        if(flag == 0)
+            return false;
+
+        if (folders[fromFolderIt].mails.empty()) {
+            return true;
+        }
+        
+        if (!folders[toFolderIt].mails.empty()) {
+            vector<CMail> tmp;
+            int fromSize = folders[fromFolderIt].mails.size();
+            int toSize = folders[toFolderIt].mails.size();
+
+            if (fromSize > toSize) {
+                tmp = move(folders[fromFolderIt].mails);
+                int i = folders[toFolderIt].mails.size() - 1;
+                //int tmpSize, j = tmp.size() - 1;
+                //tmpSize = j;
+                while (i >= 0) {
+                    int mailIt = mail_time_lower_bound(folders[toFolderIt].mails[i].TimeStamp(), tmp);
+                    if (mailIt < 0) {
+                        tmp.push_back(folders[toFolderIt].mails[i]);
+                        if (folders[toFolderIt].mails[i].Attachment() != nullptr)
+                            folders[toFolderIt].mails[i].Attachment()->AddRef();
+                        folders[toFolderIt].mails.pop_back();
+                        --i;
+                        continue;
+                    }
+                    tmp.insert(tmp.begin() + mailIt, folders[toFolderIt].mails[i]);
+                    if (folders[toFolderIt].mails[i].Attachment() != nullptr)
+                        folders[toFolderIt].mails[i].Attachment()->AddRef();
+                    --i;
+                    folders[toFolderIt].mails.pop_back();
+                }
+                folders[toFolderIt].mails = move(tmp);
+                return true;
+            } else {
+                tmp = move(folders[toFolderIt].mails);
+                int i = folders[fromFolderIt].mails.size() - 1;
+                while (i >= 0) {
+                    
+                    int mailIt = mail_time_lower_bound(folders[fromFolderIt].mails[i].TimeStamp(), tmp);
+                    if (mailIt < 0) {
+                        tmp.push_back(folders[fromFolderIt].mails[i]);
+                        if (folders[fromFolderIt].mails[i].Attachment() != nullptr)
+                            folders[fromFolderIt].mails[i].Attachment()->AddRef();
+                        folders[fromFolderIt].mails.pop_back();
+                        --i;
+                        continue;
+                    }
+
+                    tmp.insert(tmp.begin() + mailIt, folders[fromFolderIt].mails[i]);
+                    if (folders[fromFolderIt].mails[i].Attachment() != nullptr)
+                        folders[fromFolderIt].mails[i].Attachment()->AddRef();
+                    --i;
+                    folders[fromFolderIt].mails.pop_back();
+                }
+                folders[toFolderIt].mails = move(tmp);
+                return true;
+            }
+        }
+        folders[toFolderIt].mails = move(folders[fromFolderIt].mails);
+        return true;
+    }
+
+    list<CMail> ListMail(const string &folderName, const CTimeStamp &from, const CTimeStamp &to) const {
+
+        list<CMail> tmp;
+
+        int folderIt;
+        int size=folders.size();
+        int flag = 0;
+        for (int i=0; i<size; ++i)
+            if(folders[i].name==folderName){
+                folderIt=i;
+                flag =1;
+                break;
+            }
+
+        if(flag==0)
+            return tmp;
+        
+        if (folderIt < 0)
+            return tmp;
+        if (folders[folderIt].mails.empty())
+            return tmp;
+        int mailSize = folders[folderIt].mails.size() - 1;
+        int mailIt = mail_time_lower_bound(from, folderIt);
+        if (mailIt < 0)
+            return tmp;
+        
+        for (; mailIt <= mailSize && folders[folderIt].mails[mailIt].TimeStamp().Compare(to) <= 0; ++mailIt) {
+            tmp.push_back(folders[folderIt].mails[mailIt]);
+        }
+        return tmp;
+    }
+
+    set<string> ListAddr(const CTimeStamp &from, const CTimeStamp &to) const {
+        int i = folders.size() - 1;
+        set<string> tmp;
+
+        while (i >= 0) {
+
+            if (folders[i].mails.empty()) {
+                i--;
+                continue;
+            }
+
+            int mailSize = folders[i].mails.size() - 1;
+            int mailIt = mail_time_lower_bound(from, i);
+            if (mailIt < 0) {
+                i--;
+                continue;
+            }
+
+            for (; mailIt <= mailSize && folders[i].mails[mailIt].TimeStamp().Compare(to) <= 0; ++mailIt) {
+                tmp.insert(folders[i].mails[mailIt].From());
+            }
+
+            i--;
+        }
+        return tmp;
+    }
+private:
+    vector<CMailFolder> folders;
+};
+
