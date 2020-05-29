@@ -1,0 +1,176 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+/** This function frees all blocks**/
+void freeFunction(char **phrase, double *number, double *sortedidx, char *search, int idx);
+
+/**This function swaps to elements of array**/
+void swap(double *array, int idx);
+
+/** Insert sort `\__( -_- )_/`  **/
+void insertSort(double *number, double *sortedidx, int idx);
+
+/**This function searches required substring in another string**/
+int searchF(const double *sortedidx, char **phrase, char *search, int *printidx, int idx);
+
+int main(void) {
+    int size = 100, idx = 0, err = 0;
+    int *printidx = NULL; /** Array of string indexes**/
+    size_t buf_size = 0;
+    char **phrase = NULL, *search = NULL;
+    double *number = NULL, *sortedidx = NULL;/** "number" is a secondary array that helps me to sort*/ /** "sortedidx" - sorted "idx" array by "number" array*/
+    double num;/** Secondary variable for parsing**/
+    char colom;/** Secondary variable for parsing**/
+
+    number = (double *) malloc(sizeof(double) * size);
+    sortedidx = (double *) malloc(sizeof(double) * size);
+    phrase = (char **) malloc(sizeof(char *) * size);
+    for (int i = 0; i < size; i++) {
+        phrase[i] = NULL;
+    }
+
+
+    /**----------------------------------Read input block-----------------------*/
+    printf("Casto hledane fraze:\n");
+    while (true) {
+
+        if (idx >= size) {
+            size *= 2;
+            phrase = (char **) realloc(phrase, size * sizeof(char *));
+            number = (double *) realloc(number, size * sizeof(double));
+            sortedidx = (double *) realloc(sortedidx, size * sizeof(double));
+        }
+
+        err = getline(&phrase[idx], &buf_size, stdin);
+        if (err == 1) {
+            break;
+        }
+
+        if (sscanf(phrase[idx], " %lf %c", &num, &colom) != 2 || colom != ':') {
+            freeFunction(phrase, number, sortedidx, search, idx);
+            printf("Nespravny vstup.\n");
+            return 1;
+        }
+
+        number[idx] = num;
+        sortedidx[idx] = idx;
+
+        insertSort(number, sortedidx, idx);
+        idx++;
+    }
+
+
+    if (idx == 0) {
+        printf("Nespravny vstup.\n");
+        freeFunction(phrase, number, sortedidx, search, idx);
+        return 1;
+    }
+    /**--------------------------------------------------------------------------------------*/
+
+
+    /**------------------------------Search and output block---------------------------------*/
+
+    printf("Hledani:\n");
+    while (true) {
+        int q;                                                     /**- Found matches ammount*/
+        printidx = (int *) malloc(sizeof(int) * idx);        /**- Array of indexes to print*/
+        err = getline(&search, &buf_size, stdin);
+
+        if (err == EOF) {
+            free(printidx);
+            break;
+        }
+
+        q = searchF(sortedidx, phrase, search, printidx, idx);
+
+        printf("Nalezeno: %d\n", q);
+        for (; q - 1 >= 0; q--) {
+            printf("> %s", strchr(phrase[printidx[q - 1]], ':') + 1);
+        }
+
+        free(printidx);
+    }
+
+    /**-------------------------------------------------------------------------------------*/
+
+
+    freeFunction(phrase, number, sortedidx, search, idx);
+    return 0;
+
+
+}
+
+void freeFunction(char **phrase, double *number, double *sortedidx, char *search, int idx) {
+    free(number);
+    free(sortedidx);
+    free(search);
+    for (int i = 0; i <= idx; i++) {
+        free(phrase[i]);
+    }
+    free(phrase);
+}
+
+void insertSort(double *number, double *sortedidx, int idx) {
+    int i = idx;
+    if (i != 0) {                                /** Sorting "idx" array using number*/
+        while (i != 0) {
+            if (number[i] < number[i - 1]) {
+                swap(number, i);
+                swap(sortedidx, i);
+                i--;
+            } else {
+                break;
+            }
+        }
+    }
+}
+
+void swap(double *array, int idx) {
+    double temp = array[idx];
+    array[idx] = array[idx - 1];
+    array[idx - 1] = temp;
+}
+
+
+
+/** searchF will go through all string and wiil try to find matching first character of a substring and string. 
+If found - it will go farther comparing chars of 2 string untill substring won't end or character missmatch.*/
+
+
+int searchF(const double *sortedidx, char **phrase, char *search, int *printidx, int idx) {
+    int o = 0;
+    int lens = strlen(search) - 1;
+    int flag;
+    int q = 0;
+    char *tmp;
+
+    for (int i = 0; i < idx; i++) {
+        o = sortedidx[i];
+        tmp = strchr(phrase[o], ':') + 1;                         /** tmp points to the beginning of a request
+ *                                                                     example("->" where "tmp" points): (100:->How to get the best mark in code review without structures!?!?!)*/
+        int len = strlen(tmp) - 1;
+        for (int j = 0; j < len; j++) {
+            flag = 0;
+            if (tmp[j] == search[0] || tmp[j] == search[0] - 32 || tmp[j] == search[0] + 32) {
+                for (int z = 1; z < lens; z++) {
+                    if (tmp[j + z] == search[z] || tmp[j + z] == search[z] - 32 || tmp[j + z] == search[z] + 32) {
+                        flag++;
+                    } else {
+                        flag = -1;
+                        break;
+                    }
+                }
+                if (flag == lens - 1) {
+                    printidx[q] = o;
+                    q++;
+                    break;
+                }
+            }
+        }
+    }
+    return q;
+
+}
+
